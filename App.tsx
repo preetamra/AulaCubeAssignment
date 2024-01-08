@@ -1,12 +1,7 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React,{ 
+  useEffect,
+  useState,
+ } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -16,103 +11,132 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
+async function fetchComments(id) {
+  try {
+    const res = await fetch(`https://jsonplaceholder.typicode.com/comments?postId=${id}`);
+    const resJson = await res.json();
+    return resJson;   
+  }catch(error) {
+    console.log(error);
+    return [];
+  }
 }
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [data, setDate] = useState([]);
+  const [comments,setComments] = useState([])
+  const [postId,setPostId] = useState(null);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  useEffect(() => {
+    fetch('https://jsonplaceholder.typicode.com/posts').then((res) => {
+     return res.json();
+    }).then((data) => {
+      const tempData = data.map((item,index) => {
+        return {
+          label: item.title,
+          value: item.body,
+          id:item.id
+        }
+      })
+      setDate(tempData);
+    }).catch((error) => {
+      console.log(error);
+      setDate([]);
+    })
+  },[]);
+
+  useEffect(() => {
+    if(!postId) return;
+    fetchComments(postId).then((res) => {
+      setComments(res);
+    })
+   },[postId]);
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+    <SafeAreaView style={styles.container}>
+      <Dropdown 
+      data={data}
+      maxHeight={300}
+      labelField="label"
+      valueField="value"
+      style={{
+        width:"100%"
+      }}
+      onChange={ async(val) => {
+        setPostId(val?.id);
+      }}
+      ></Dropdown>
+      {
+        !comments.length && <View style={{
+          flex:1,
+          justifyContent:"center",
+          alignItems:"center",
+        }}>
+          <Text>Please Select an item from the DropDown Menu</Text>
         </View>
+      }
+      <ScrollView>
+      {comments?.map((item,index) => {
+          return(
+            <View style={{
+              width:"95%",
+              height:"auto",
+              marginTop:10,
+              backgroundColor:"#f1f1f1",
+              borderRadius:10,
+              padding:10,
+              justifyContent:"space-between",
+              alignItems:"center",
+              alignSelf:"center",
+              marginBottom:10,
+            }}>
+              <Text style={
+              {
+                fontSize:16,
+                fontWeight:'500',
+                marginTop:10,
+              }
+            }>
+                {item.name}
+              </Text>
+              <Text style={
+              {
+                fontSize:14,
+                //fontWeight:'bold',
+                marginTop:10,
+              }
+            }>
+                {item.email}
+              </Text>
+            <Text 
+            style={
+              {
+                fontSize:18,
+                fontWeight:'bold',
+                marginTop:10,
+              }
+            } 
+            key={index}>
+              {item.body}
+            </Text>
+            </View>
+          )
+        })}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+   container:{
+    flex:1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin:10,
+   }
 });
 
 export default App;
